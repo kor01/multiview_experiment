@@ -1,46 +1,48 @@
 import sympy as sp
 import numpy as np
 from equation import linear_coefficient
+from equation import stack_coefficients
 from least_square import solve_linear_homogeneous
 from sympy.utilities.autowrap import autowrap
 
 
-def homogeneous_pnp_equation():
+def extract_coefficient(equation, variables):
+  coeff0 = linear_coefficient(
+    equation[0], variables, is_homogeneous=True)
+  coeff1 = linear_coefficient(
+    equation[1], variables, is_homogeneous=True)
+  coeff = sp.Matrix((coeff0, coeff1))
+  return coeff
 
-  p2dv = sp.symbols('x1_1:4')
-  p3dv = sp.symbols('x0_1:5')
 
-  p2d = sp.Matrix(p2dv)
-  p3d = sp.Matrix(p3dv)
+def linear_pnp_coefficient():
 
-  pv = sp.symbols('p1:12')
+  p2dv = sp.symbols('x1_1:3')
+  p3dv = sp.symbols('x0_1:4')
+
+  p2d = sp.Matrix(p2dv + (1,))
+  p3d = sp.Matrix(p3dv + (1,))
+
+  pv = sp.symbols('p1:13')
   p = sp.Matrix(pv).reshape(3, 4)
 
   equation = p2d.cross(p * p3d)
+  coeff =  extract_coefficient(equation, pv)
+  fn = autowrap(coeff, args=p2dv + p3dv)
 
-  coeff0 = linear_coefficient(
-    equation[0], pv)
-  coeff1 = linear_coefficient(
-    equation[1], pv)
+  def generator(pair):
+    left, right = pair
+    return fn(*list(left), *list(right))
 
-  coeff0 = coeff0.transpose().tolist()[0]
-  coeff1 = coeff1.transpose().tolist()[0]
-
-  coeff = sp.Matrix((coeff0, coeff1))
-
-  return autowrap(coeff, args=p2dv + p3dv)
+  return generator
 
 
-coefficient_gen = homogeneous_pnp_equation()
+pnp_gen = linear_pnp_coefficient()
 
-
-def generate_pnp_parameter(pairs):
-  ret = []
-  for pair in pairs:
-    ret.append(coefficient_gen(
-      pair[0][0], pair[0][1], 1, pair[1][0],
-      pair[1][1], pair[1][2], 1))
-  return np.vstack(ret)
+def solve_pnp(pairs):
+  coeff = stack_coefficients(pairs, pnp_gen)
+  ret = solve_linear_homogeneous(coeff).reshape(3, 4)
+  return ret
 
 
 def normalize_vec(vec):
@@ -66,7 +68,6 @@ def approximate_so3(mat):
 
 
 def solve_pnp(pairs):
-  coeff = generate_pnp_parameter(pairs)
-  solution = solve_linear_homogeneous(coeff).reshap(3, 4)
-  solution[:, :3] = approximate_so3(solution[:, :3])
-  return solution
+  ret = solve_pnp(pairs)
+  ret[:, :3] = approximate_so3(ret[:, :3])
+  return ret
