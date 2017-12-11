@@ -2,8 +2,8 @@ import numpy as np
 import sympy as sp
 from sympy.utilities.autowrap import autowrap
 from equation import linear_coefficient
+from equation import stack_coefficients
 from least_square import solve_linear_homogeneous
-
 
 
 def fundamental_equation():
@@ -18,25 +18,23 @@ def fundamental_equation():
   fv = sp.symbols('f1:10')
   f = sp.Matrix(fv).reshape(3, 3)
   equation = sp.transpose(x0) * f * x1
-  coeffs = linear_coefficient(equation, fv)
+  coeffs = linear_coefficient(equation[0, 0], fv)
   coeffs = sp.Matrix(coeffs)
   ret = autowrap(coeffs, args=x0v + x1v)
 
-  return ret
+  def estimator(pair):
+    left, right = pair
+    val = ret(left[0], left[1], left[2],
+              right[0], right[1], right[2])
+    return val.ravel()
+
+  return estimator
 
 coeff_gen = fundamental_equation()
 
 
 def generate_fundamental_parameter(pairs):
-
-  coeffs = []
-  for pair in pairs:
-    coeff = coeff_gen(
-      pair[0][0], pair[0][1], 1,
-      pair[1][0], pair[1][1], 1)
-    coeffs.append(coeff)
-  coeffs = np.array(coeffs)
-  return coeffs
+  return stack_coefficients(pairs, coeff_gen)
 
 
 def svd_cleanup(essential):
@@ -46,14 +44,8 @@ def svd_cleanup(essential):
   return u @ d @ v
 
 
-def estimate_essential(
-    pairs, inv_intrinsics):
-
-  pairs = pairs.reshape(-1, 2).transpose()
-  pairs = np.matmul(inv_intrinsics, pairs)
-  pairs = pairs.reshape(-1, 2, 2)
+def estimate_essential(pairs):
   coeff = generate_fundamental_parameter(pairs)
-
   # solve equation
   essential = solve_linear_homogeneous(coeff)
   essential = svd_cleanup(essential.reshape(3, 3))
@@ -88,6 +80,3 @@ def estimate_euclidean(essential, pairs):
     if test_front(c[0], c[1], pairs):
       return c
   raise AttributeError('non in front')
-
-
-

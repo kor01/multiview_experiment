@@ -11,7 +11,7 @@ def linear_coefficient(
   ret = []
   for v in variables:
     if v in coeff:
-      ret.append(v)
+      ret.append(coeff[v])
     else:
       ret.append(0)
 
@@ -27,10 +27,9 @@ def linear_coefficient(
 
 
 def stack_coefficients(variables, generator):
-
   v0 = generator(variables[0])
   ret = np.zeros((len(variables), v0.size))
   ret[0, :] = v0
-  for i, v in variables[1:]:
-    ret[i, :] = generator(v)
+  for i, v in enumerate(variables[1:]):
+    ret[i + 1, :] = generator(v)
   return ret
