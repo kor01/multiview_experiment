@@ -39,7 +39,7 @@ def linear_pnp_coefficient():
 
 pnp_gen = linear_pnp_coefficient()
 
-def solve_pnp(pairs):
+def estimate_pnp(pairs):
   coeff = stack_coefficients(pairs, pnp_gen)
   ret = solve_linear_homogeneous(coeff).reshape(3, 4)
   return ret
@@ -68,6 +68,6 @@ def approximate_so3(mat):
 
 
 def solve_pnp(pairs):
-  ret = solve_pnp(pairs)
+  ret = estimate_pnp(pairs)
   ret[:, :3] = approximate_so3(ret[:, :3])
   return ret

@@ -11,13 +11,17 @@ pairs = np.array((xs[0], xs[1])).transpose((1, 0, 2))
 
 essential = epipolar.estimate_essential(pairs)
 
+print('essential', essential)
+
 # second image's extrinsic parameters
-r, c = epipolar.estimate_euclidean(essential, pairs)
+(r, c), coords = epipolar.estimate_euclidean(essential, pairs)
 
 left, right = pairs[100]
 
 print(left @ essential @ right)
 
 print(dataset.r)
+
+print(r)
 
 print(r @ dataset.r)

@@ -4,6 +4,7 @@ from sympy.utilities.autowrap import autowrap
 from equation import linear_coefficient
 from equation import stack_coefficients
 from least_square import solve_linear_homogeneous
+from triangulation import solve_triangulation
 
 
 def fundamental_equation():
@@ -52,12 +53,19 @@ def estimate_essential(pairs):
   return essential
 
 
-def test_front(rot, t, pairs):
-  for _, pt in pairs:
-    image = rot @ pt + t
-    if image[2] < 0:
-      return False
-  return True
+def test_front(pairs, r, t):
+  projection = np.concatenate((r, t[:, None]), axis=-1)
+  coords = []
+  for s, t in pairs:
+    coord = solve_triangulation(s, t, projection)
+    if coord[2] < 0:
+      return False, None
+    coord_1 = r @ coord + t
+    if coord_1[2] < 0:
+      return False, None
+    coords.append(coord)
+
+  return True, coords
 
 
 def estimate_euclidean(essential, pairs):
@@ -69,14 +77,17 @@ def estimate_euclidean(essential, pairs):
   t = solve_linear_homogeneous(essential.transpose())
 
   u, d, v = np.linalg.svd(essential)
-  w = np.array([[0.0, -1, 0], [1, 0, 0], [0, 0, 1]])
+
+  detu, detv = np.linalg.det(u), np.linalg.det(v)
+  w = np.array([[0.0, -1, 0], [1, 0, 0], [0, 0, 1]]) * detu * detv
 
   rot0 = u @ w @ v
   rot1 = u @ w.transpose() @ v
 
-  candidates = [(rot0, t), (rot0, -t), (rot1, t), (rot1, -1)]
+  candidates = [(rot0, t), (rot0, -t), (rot1, t), (rot1, -t)]
 
   for c in candidates:
-    if test_front(c[0], c[1], pairs):
-      return c
+    valid, coords = test_front(pairs, c[0], c[1])
+    if valid:
+      return c, coords
   raise AttributeError('non in front')
