@@ -1,3 +1,4 @@
+import cv2
 import sympy as sp
 import numpy as np
 from equation import linear_coefficient
@@ -32,42 +33,54 @@ def linear_pnp_coefficient():
 
   def generator(pair):
     left, right = pair
-    return fn(*list(left), *list(right))
+    return fn(left[0], left[1], *list(right))
 
   return generator
 
 
 pnp_gen = linear_pnp_coefficient()
 
+def svd_cleanup(proj):
+  r, t = proj[:, :3], proj[:, -1]
+  u, d, v = np.linalg.svd(r)
+  sign = np.linalg.det(u) * np.linalg.det(v)
+  r = u @ v * sign
+  t = sign * t / d[0]
+  print(r @ r.transpose(), t)
+  return np.concatenate((r, t[:, None]), axis=-1)
+
+
 def estimate_pnp(pairs):
-  coeff = stack_coefficients(pairs, pnp_gen)
+  coeff = np.array([pnp_gen(v) for v in pairs])
+  coeff = coeff.reshape(-1, coeff.shape[-1])
   ret = solve_linear_homogeneous(coeff).reshape(3, 4)
+  ret = svd_cleanup(ret)
   return ret
+
+
+def gradient_descend(grad, loss):
+  pass
+
+
+def optimize_proj(initial, pairs):
+  """
+  further optimize projection given initial value and pairs
+  :param initial:
+  :param pairs:
+  :return:
+  """
+  pass
+
 
 
 def normalize_vec(vec):
   ret = vec / np.linalg.norm(vec)
   return ret
 
-
-def approximate_so3(mat):
-  """
-  find the closest so3 transform under Frobenius norm
-  :param mat: a 3x3 matrix
-  :return:a 3x3 rotation matrix
-  """
-  xaxis = normalize_vec(mat[0, :])
-  yaxis = normalize_vec(mat[1, :])
-  yaxis = np.cross(np.cross(xaxis, yaxis), yaxis)
-  yaxis = normalize_vec(yaxis)
-  zaxis = np.cross(xaxis, yaxis)
-
-  rot = np.vstack((xaxis, yaxis, zaxis)).transpose()
-  #TODO: represent rot as quaternion and perform nonlinear LS
-  return rot
-
-
 def solve_pnp(pairs):
   ret = estimate_pnp(pairs)
-  ret[:, :3] = approximate_so3(ret[:, :3])
+  r, t = ret[:, :3], ret[:, -1]
+  axis, angle = extract_axis_angle(r)
   return ret
+
+cv2.solvePnP()

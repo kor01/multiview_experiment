@@ -2,8 +2,11 @@
   <dictionary name="pu">
     <words>
       <w>coeffs</w>
+      <w>dtheta</w>
+      <w>eigen</w>
       <w>inliners</w>
       <w>kalman</w>
+      <w>nidx</w>
       <w>yaxis</w>
     </words>
   </dictionary>
