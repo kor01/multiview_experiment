@@ -34,8 +34,8 @@ def visualize_dataset(dataset):
   return ret
 
 
-#SFM_PATH = '/Users/pu/work/PycharmProjects/multiview_experiment/data/data.mat'
-SFM_PATH = '/home/pu/PycharmProjects/multiview_experiment/data/data.mat'
+SFM_PATH = '/Users/pu/work/PycharmProjects/multiview_experiment/data/data.mat'
+#SFM_PATH = '/home/pu/PycharmProjects/multiview_experiment/data/data.mat'
 
 SFMDataset = namedtuple(
   'SFMDataset', ('xs', 'imgs', 'k', 'r', 'c'))

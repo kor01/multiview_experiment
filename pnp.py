@@ -1,4 +1,5 @@
 import cv2
+import time
 import sympy as sp
 import numpy as np
 from equation import linear_coefficient
@@ -58,18 +59,17 @@ def estimate_pnp(pairs):
   return ret
 
 
-def gradient_descend(grad, loss):
-  pass
+def estimate_pnp_cv2(pairs):
+  points = np.array([x[1] for x in pairs])[:, :, None]
+  #points = np.random.random((10,3,1))
+  img_pts = np.array([x[0] for x in pairs])[:, :2, None].copy()
 
-
-def optimize_proj(initial, pairs):
-  """
-  further optimize projection given initial value and pairs
-  :param initial:
-  :param pairs:
-  :return:
-  """
-  pass
+  #print(img_pts1, img_pts)
+  dist = np.zeros((5, 1))
+  ret, rvec, tvec = cv2.solvePnP(
+    points, img_pts, np.eye(3), distCoeffs=dist)
+  assert ret, 'solve failed'
+  return rvec, tvec
 
 
 
@@ -78,9 +78,9 @@ def normalize_vec(vec):
   return ret
 
 def solve_pnp(pairs):
-  ret = estimate_pnp(pairs)
-  r, t = ret[:, :3], ret[:, -1]
-  axis, angle = extract_axis_angle(r)
-  return ret
-
-cv2.solvePnP()
+  start = time.time()
+  r, t = estimate_pnp_cv2(pairs)
+  r, _ = cv2.Rodrigues(r)
+  duration = time.time() - start
+  print('duration:', duration)
+  return r, t

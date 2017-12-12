@@ -17,14 +17,16 @@ projection = np.concatenate((r, t), axis=-1)
 coordinates = [solve_triangulation(x, y, projection)
                for x, y in zip(xs[0], xs[1])]
 
-idx = 70
+idx = 100
 rec = r @ coordinates[idx] + t.ravel()
 print(coordinates[idx].shape)
 print('validate:', xs[1][idx], rec / rec[2])
 
-extrinsic = solve_pnp(list(zip(xs[2], coordinates)))
+r, t = solve_pnp(list(zip(xs[2], coordinates)))
 
-r, t = extrinsic[:, :3], extrinsic[:, -1]
+print('shape:', r, t)
+
+#r, t = extrinsic[:, :3], extrinsic[:, -1]
 
 rec = r @ coordinates[idx] + t.ravel()
 
